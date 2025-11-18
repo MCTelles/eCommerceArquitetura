@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   # ===================== BANCOS =====================
@@ -11,7 +11,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: 123456
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - postgres_users_data:/var/lib/postgresql/data
 
@@ -24,7 +24,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: 123456
     ports:
-      - "5434:5432"
+      - '5434:5432'
     volumes:
       - postgres_products_data:/var/lib/postgresql/data
 
@@ -37,23 +37,27 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: 123456
     ports:
-      - "5435:5432"
+      - '5435:5432'
     volumes:
       - postgres_payments_data:/var/lib/postgresql/data
 
   mongo-orders:
     image: mongo:6
     container_name: mongo_orders
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 })' || exit 1"]
+      test:
+        [
+          'CMD-SHELL',
+          "mongosh --quiet --eval 'db.runCommand({ ping: 1 })' || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     ports:
-      - "27018:27017"
+      - '27018:27017'
     volumes:
       - mongo_orders_data:/data/db
 
@@ -63,8 +67,13 @@ services:
     depends_on:
       mongo-orders:
         condition: service_healthy
-    command: ["sh", "-c", "mongosh --host mongo-orders:27017 --eval \"rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'mongo-orders:27017' }]})\" || true"]
-    restart: "no"
+    command:
+      [
+        'sh',
+        '-c',
+        'mongosh --host mongo-orders:27017 --eval "rs.initiate({_id: ''rs0'', members: [{ _id: 0, host: ''mongo-orders:27017'' }]})" || true',
+      ]
+    restart: 'no'
 
   # ===================== SERVIÇOS =====================
   order-service:
@@ -77,7 +86,7 @@ services:
       - USERS_SERVICE_URL=http://users-service:3000
       - PRODUCTS_SERVICE_URL=http://products-service:3000
     ports:
-      - "3001:3000"
+      - '3001:3000'
     depends_on:
       mongo-orders:
         condition: service_healthy
@@ -92,7 +101,7 @@ services:
       - PORT=3000
       - DATABASE_URL=postgresql://user:123456@postgres-users:5432/users_db
     ports:
-      - "3002:3000"
+      - '3002:3000'
     depends_on:
       - postgres-users
 
@@ -107,7 +116,7 @@ services:
       - SUPPLIER_EMAIL=fornecedor@ecommerce.local
       - LOW_STOCK_THRESHOLD=5
     ports:
-      - "3003:3000"
+      - '3003:3000'
     depends_on:
       - postgres-products
 
@@ -122,11 +131,12 @@ services:
       - EMAIL_SERVICE_URL=http://email-service:3000
       - USERS_SERVICE_URL=http://users-service:3000
     ports:
-      - "3004:3000"
+      - '3004:3000'
     depends_on:
       - postgres-payments
       - order-service
       - email-service
+      - rabbitmq
 
   email-service:
     build: ./email-service
@@ -136,8 +146,52 @@ services:
       - PORT=3000
       - MAIL_FROM=no-reply@ecommerce.local
       - LOW_STOCK_THRESHOLD=5
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     ports:
-      - "3005:3000"
+      - '3005:3000'
+
+  # === INFRA DE MONITORAMENTO ===
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    restart: always
+    ports:
+      - '8086:8086'
+    environment:
+      - INFLUXDB_DB=k6
+      - INFLUXDB_HTTP_AUTH_ENABLED=false
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./influxdb-init/init-influxdb.sh:/docker-entrypoint-initdb.d/init-influxdb.sh
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  # === K6 ===
+  k6:
+    image: grafana/k6:latest
+    container_name: k6_runner
+    depends_on:
+      - payment-service
+      - order-service
+      - influxdb
+    volumes:
+      - ./k6-scripts:/scripts
+    working_dir: /scripts
+    entrypoint: ['k6']
+    networks:
+      - default
 
   # ===================== UIs =====================
   pgadmin:
@@ -148,7 +202,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
+      - '5050:80'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -165,9 +219,19 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin
     ports:
-      - "8081:8081"
+      - '8081:8081'
     depends_on:
       - mongo-orders
+
+  rabbitmq:
+    image: rabbitmq:3.9-management
+    container_name: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
 
 # ===================== VOLUMES =====================
 volumes:
@@ -176,3 +240,5 @@ volumes:
   postgres_payments_data:
   mongo_orders_data:
   pgadmin_data:
+  influxdb_data:
+  grafana_data:
