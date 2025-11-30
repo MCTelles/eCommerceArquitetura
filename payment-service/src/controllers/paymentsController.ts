@@ -1,8 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { redisClient } from '../redisClient.js';
+import { getCache, setCache } from '../utils/cache.js';
 
 const prisma = new PrismaClient();
+const PAYMENT_TYPES_CACHE_KEY = 'payment:types';
 
 const ORDER_SERVICE_URL =
 	process.env.ORDER_API_URL ?? 'http://order-service:3000';
@@ -19,8 +22,24 @@ interface PaymentInput {
 	amount: number;
 }
 
-export const listarMetodosPagamento = (_req: Request, res: Response) => {
-	res.status(200).json(METODOS_PERMITIDOS);
+export const listarMetodosPagamento = async (_req: Request, res: Response) => {
+	try {
+		const cacheKey = PAYMENT_TYPES_CACHE_KEY;
+
+		const cached = await getCache(cacheKey);
+		if (cached) {
+			return res.status(200).json(cached);
+		}
+
+		const types = METODOS_PERMITIDOS;
+
+		await setCache(cacheKey, types); // Sem TTL => infinito
+
+		res.status(200).json(types);
+	} catch (error: any) {
+		console.error('Erro ao listar métodos de pagamento:', error.message);
+		res.status(500).json({ message: 'Erro ao listar métodos de pagamento' });
+	}
 };
 
 export const confirmarPagamento = async (req: Request, res: Response) => {
@@ -99,10 +118,10 @@ export const confirmarPagamento = async (req: Request, res: Response) => {
 		const creationPromises = payments.map(payment =>
 			prisma.payment.create({
 				data: {
-					orderId,
+					orderId: String(orderId),
 					method: payment.method,
 					amount: payment.amount,
-					success: true,
+					status: 'PENDING',
 				},
 			})
 		);
@@ -144,12 +163,10 @@ export const confirmarPagamento = async (req: Request, res: Response) => {
 			return res.status(error.response.status).json(error.response.data);
 		}
 
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao confirmar pagamento',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao confirmar pagamento',
+			error: error?.message ?? String(error),
+		});
 	}
 };
 
@@ -162,18 +179,16 @@ export const buscarPagamentosDoPedido = async (req: Request, res: Response) => {
 		}
 
 		const payments = await prisma.payment.findMany({
-			where: { orderId },
+			where: { orderId: String(req.params.orderId) },
 			orderBy: { createdAt: 'desc' },
 		});
 
 		res.status(200).json(payments);
 	} catch (error: any) {
 		console.error('Erro ao buscar pagamentos:', error?.message ?? error);
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao buscar pagamentos',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao buscar pagamentos',
+			error: error?.message ?? String(error),
+		});
 	}
 };

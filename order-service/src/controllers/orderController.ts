@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { producer as kafkaProducer } from '../kafka/producer.js';
 
 const prisma = new PrismaClient();
 
@@ -60,11 +61,9 @@ export const criarPedido = async (req: Request, res: Response) => {
 			}
 
 			if (product.stock < item.quantity) {
-				return res
-					.status(400)
-					.json({
-						message: `Estoque insuficiente para o produto ${product.name}.`,
-					});
+				return res.status(400).json({
+					message: `Estoque insuficiente para o produto ${product.name}.`,
+				});
 			}
 
 			const subtotal = product.price * item.quantity;
@@ -92,6 +91,23 @@ export const criarPedido = async (req: Request, res: Response) => {
 			},
 		});
 
+		await kafkaProducer.send({
+			topic: 'order.created',
+			messages: [
+				{
+					value: JSON.stringify({
+						order: newOrder,
+						payment: {
+							orderId: newOrder.id,
+							amount: newOrder.total,
+							method: 'CREDIT_CARD', // por enquanto está com método fixo
+							status: 'PENDING',
+						},
+					}),
+				},
+			],
+		});
+
 		res.status(201).json(newOrder);
 	} catch (error: any) {
 		console.error('Erro ao criar pedido:', error?.message ?? error);
@@ -100,12 +116,10 @@ export const criarPedido = async (req: Request, res: Response) => {
 			return res.status(error.response.status).json(error.response.data);
 		}
 
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao criar pedido',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao criar pedido',
+			error: error?.message ?? String(error),
+		});
 	}
 };
 
@@ -117,12 +131,10 @@ export const listarPedidos = async (_req: Request, res: Response) => {
 		res.status(200).json(orders);
 	} catch (error: any) {
 		console.error('Erro ao listar pedidos:', error?.message ?? error);
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao listar pedidos',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao listar pedidos',
+			error: error?.message ?? String(error),
+		});
 	}
 };
 
@@ -139,12 +151,10 @@ export const buscarPedidoPorId = async (req: Request, res: Response) => {
 		res.status(200).json(order);
 	} catch (error: any) {
 		console.error('Erro ao buscar pedido:', error?.message ?? error);
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao buscar pedido',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao buscar pedido',
+			error: error?.message ?? String(error),
+		});
 	}
 };
 
@@ -167,12 +177,10 @@ export const buscarPedidosDoUsuario = async (req: Request, res: Response) => {
 			'Erro ao buscar pedidos do usuário:',
 			error?.message ?? error
 		);
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao buscar pedidos do usuário',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao buscar pedidos do usuário',
+			error: error?.message ?? String(error),
+		});
 	}
 };
 
@@ -201,11 +209,9 @@ export const atualizarStatusPedido = async (req: Request, res: Response) => {
 			return res.status(404).json({ message: 'Pedido não encontrado.' });
 		}
 
-		res
-			.status(500)
-			.json({
-				message: 'Erro ao atualizar status do pedido',
-				error: error?.message ?? String(error),
-			});
+		res.status(500).json({
+			message: 'Erro ao atualizar status do pedido',
+			error: error?.message ?? String(error),
+		});
 	}
 };

@@ -1,35 +1,38 @@
 {
-  "name": "payment-service",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "dist/index.js",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "Payment microservice with Express, TypeScript and Prisma",
-  "dependencies": {
-    "@prisma/client": "^6.16.1",
-    "amqplib": "^0.10.9",
-    "axios": "^1.7.9",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "prisma": "^6.16.1"
-  },
-  "devDependencies": {
-    "@types/amqplib": "^0.10.8",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.16.5",
-    "tsx": "^4.20.5",
-    "typescript": "^5.6.3"
-  }
+	"name": "payment-service",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"prisma:generate": "prisma generate",
+		"prisma:migrate": "prisma migrate dev",
+		"db:deploy": "prisma migrate deploy"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "Payment microservice with Express, TypeScript and Prisma",
+	"dependencies": {
+		"@prisma/client": "^6.16.1",
+		"amqplib": "^0.10.9",
+		"axios": "^1.7.9",
+		"cors": "^2.8.5",
+		"dotenv": "^16.4.5",
+		"express": "^4.19.2",
+		"kafkajs": "^2.2.4",
+		"prisma": "^6.19.0",
+		"redis": "^5.10.0"
+	},
+	"devDependencies": {
+		"@types/amqplib": "^0.10.8",
+		"@types/cors": "^2.8.19",
+		"@types/express": "^4.17.21",
+		"@types/kafkajs": "^1.8.2",
+		"@types/node": "^20.16.5",
+		"tsx": "^4.20.5",
+		"typescript": "^5.6.3"
+	}
 }

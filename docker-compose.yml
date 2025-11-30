@@ -100,10 +100,12 @@ services:
     environment:
       - PORT=3000
       - DATABASE_URL=postgresql://user:123456@postgres-users:5432/users_db
+      - REDIS_URL=redis://redis:6379
     ports:
       - '3002:3000'
     depends_on:
       - postgres-users
+      - redis
 
   products-service:
     build: ./products-service
@@ -115,21 +117,23 @@ services:
       - EMAIL_SERVICE_URL=http://email-service:3000
       - SUPPLIER_EMAIL=fornecedor@ecommerce.local
       - LOW_STOCK_THRESHOLD=5
+      - REDIS_URL=redis://redis:6379
     ports:
       - '3003:3000'
     depends_on:
       - postgres-products
+      - redis
 
   payment-service:
     build: ./payment-service
     container_name: payments_service
     restart: always
     environment:
-      - PORT=3000
-      - DATABASE_URL=postgresql://user:123456@postgres-payments:5432/payments_db
-      - ORDER_API_URL=http://order-service:3000
-      - EMAIL_SERVICE_URL=http://email-service:3000
-      - USERS_SERVICE_URL=http://users-service:3000
+      DATABASE_URL: 'postgresql://user:123456@postgres-payments:5432/payments_db?schema=public'
+      ORDER_API_URL: 'http://order-service:3000'
+      EMAIL_SERVICE_URL: 'http://email-service:3000'
+      USERS_SERVICE_URL: 'http://users-service:3000'
+      PORT: '3000'
     ports:
       - '3004:3000'
     depends_on:
@@ -233,6 +237,61 @@ services:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - '9094:9094'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - '8080:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  redis-ui:
+    image: rediscommander/redis-commander:latest
+    container_name: redis_ui
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    ports:
+      - '8082:8081'
+
 # ===================== VOLUMES =====================
 volumes:
   postgres_users_data:
@@ -242,3 +301,4 @@ volumes:
   pgadmin_data:
   influxdb_data:
   grafana_data:
+  redis_data:
