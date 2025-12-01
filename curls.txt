@@ -1,0 +1,70 @@
+=============================
+=        USERS
+=============================
+
+# Listar usuários
+curl http://localhost:8000/users
+
+# Criar usuário
+curl --request POST http://localhost:8000/users \
+  --header "Content-Type: application/json" \
+  --data '{
+    "name": "João",
+    "email": "joao@example.com"
+  }'
+
+
+=============================
+=        PRODUCTS
+=============================
+
+# Listar produtos
+curl http://localhost:8000/products
+
+# Criar produto
+curl --request POST http://localhost:8000/products \
+  --header "Content-Type: application/json" \
+  --data '{
+    "name": "Notebook",
+    "price": 3500,
+    "stock": 10
+  }'
+
+
+=============================
+=        ORDERS
+=============================
+
+# Listar pedidos
+curl http://localhost:8000/orders
+
+# Criar pedido
+curl --request POST http://localhost:8000/orders \
+  --header "Content-Type: application/json" \
+  --data '{
+    "userId": 1,
+    "items": [
+      { "productId": 1, "quantity": 2 }
+    ]
+  }'
+
+
+=============================
+=        PAYMENTS
+=============================
+
+# Métodos de pagamento
+curl http://localhost:8000/payments/methods
+
+# Confirmar pagamento
+curl --request POST http://localhost:8000/payments/confirm \
+  --header "Content-Type: application/json" \
+  --data '{
+    "orderId": "REPLACE_ORDER_ID",
+    "payments": [
+      { "method": "PIX", "amount": 4000 }
+    ]
+  }'
+
+# Buscar pagamentos de um pedido
+curl http://localhost:8000/payments/order/REPLACE_ORDER_ID
