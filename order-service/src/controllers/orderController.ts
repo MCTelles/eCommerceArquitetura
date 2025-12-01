@@ -2,8 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { producer as kafkaProducer } from '../kafka/producer.js';
+import { getCache, setCache } from '../utils/cache.js';
+import { redisClient } from '../redisClient.js';
 
 const prisma = new PrismaClient();
+const THIRTY_DAYS = 30 * 24 * 60 * 60;
 
 const USERS_SERVICE_URL =
 	process.env.USERS_SERVICE_URL ?? 'http://users-service:3000';
@@ -141,20 +144,34 @@ export const listarPedidos = async (_req: Request, res: Response) => {
 export const buscarPedidoPorId = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
+		const cacheKey = `order:${id}`;
 
-		const order = await prisma.order.findUnique({ where: { id } });
+		if (!id) {
+			return res.status(400).json({ message: 'ID inválido' });
+		}
+
+		// 1. tenta encontrar no cache
+		const cached = await getCache(cacheKey);
+		if (cached) {
+			return res.status(200).json(cached);
+		}
+
+		// 2. busca no banco
+		const order = await prisma.order.findUnique({
+			where: { id },
+		});
 
 		if (!order) {
 			return res.status(404).json({ message: 'Pedido não encontrado.' });
 		}
 
-		res.status(200).json(order);
-	} catch (error: any) {
-		console.error('Erro ao buscar pedido:', error?.message ?? error);
-		res.status(500).json({
-			message: 'Erro ao buscar pedido',
-			error: error?.message ?? String(error),
-		});
+		// 3. salva no cache por 30 dias
+		await setCache(cacheKey, order, THIRTY_DAYS);
+
+		return res.status(200).json(order);
+	} catch (err: any) {
+		console.error(err);
+		res.status(500).json({ message: 'Erro interno', error: err.message });
 	}
 };
 
@@ -197,6 +214,10 @@ export const atualizarStatusPedido = async (req: Request, res: Response) => {
 			where: { id },
 			data: { status },
 		});
+
+		// 🧹 INVALIDAR CACHE DO PEDIDO
+		const cacheKey = `order:${id}`;
+		await redisClient.del(cacheKey);
 
 		res.status(200).json(updatedOrder);
 	} catch (error: any) {

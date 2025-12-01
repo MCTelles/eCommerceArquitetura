@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import ordersRoutes from './routes/orderRoutes.js';
 import { connectProducer } from './kafka/producer.js';
+import { connectRedis } from './redisClient.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -16,9 +17,12 @@ app.get('/health', (_req, res) => {
 	res.json({ status: 'ok' });
 });
 
-app.listen(PORT, HOST, () => {
-	console.log(`Order Service rodando na porta ${PORT}`);
-});
+async function bootstrap() {
+	await connectRedis();
+	app.listen(PORT, () => {
+		console.log(`products-service rodando na porta ${PORT}`);
+	});
+}
 
-// Conecta o producer do Kafka ao iniciar o serviço
+bootstrap();
 connectProducer();

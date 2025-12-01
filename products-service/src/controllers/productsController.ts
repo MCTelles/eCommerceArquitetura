@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { getCache, setCache } from '../utils/cache.js';
+import { redisClient } from '../redisClient.js';
 
 const prisma = new PrismaClient();
 
@@ -77,6 +78,7 @@ export const criarProduto = async (req: Request, res: Response) => {
 		const newProduct = await prisma.product.create({
 			data: { name, price, stock },
 		});
+		await redisClient.del('products:all');
 		res.status(201).json(newProduct);
 	} catch (error: any) {
 		console.error('Erro ao criar produto:', error.message);
@@ -107,6 +109,7 @@ export const atualizarProdutoId = async (req: Request, res: Response) => {
 				stock: stock ?? product.stock,
 			},
 		});
+		await redisClient.del('products:all');
 		res.status(200).json(updatedProduct);
 	} catch (error: any) {
 		console.error('Erro ao atualizar produto:', error.message);
@@ -128,6 +131,7 @@ export const deletarProdutoId = async (req: Request, res: Response) => {
 		if (!product)
 			return res.status(404).json({ message: 'Produto não encontrado.' });
 		await prisma.product.delete({ where: { id } });
+		await redisClient.del('products:all');
 		res.status(204).send();
 	} catch (error: any) {
 		console.error('Erro ao deletar produto:', error.message);
@@ -170,7 +174,7 @@ export const atualizarEstoqueProduto = async (req: Request, res: Response) => {
 			where: { id },
 			data: { stock: novoEstoque },
 		});
-
+		await redisClient.del('products:all');
 		// Envia notificação se o estoque ficar abaixo do limite
 		if (updatedProduct.stock <= LOW_STOCK_THRESHOLD) {
 			axios

@@ -1,36 +1,28 @@
-// src/utils/cache.ts
-import { createClient } from 'redis';
+import { redisClient, connectRedis } from '../redisClient.js';
 
-const redis = createClient({
-	url: process.env.REDIS_URL || 'redis://redis:6379',
-});
+await connectRedis(); // garante a conexão antes de usar o cache
 
-redis.on('connect', () => {
+redisClient.on('connect', () => {
 	console.log(
 		'Conectado ao Redis:',
 		process.env.REDIS_URL || 'redis://redis:6379'
 	);
 });
 
-redis.on('error', err => {
+redisClient.on('error', err => {
 	console.error('Redis error', err);
 });
 
-await redis.connect();
-
 export async function getCache(key: string) {
-	const data = await redis.get(key);
+	const data = await redisClient.get(key);
 
-	if (data) {
-		console.log(`CACHE HIT: ${key}`);
-	} else {
-		console.log(`CACHE MISS: ${key}`);
-	}
+	if (data) console.log(`CACHE HIT: ${key}`);
+	else console.log(`CACHE MISS: ${key}`);
 
 	return data ? JSON.parse(data) : null;
 }
 
 export async function setCache(key: string, value: any, ttlSeconds: number) {
 	console.log(`CACHE SAVE: ${key} (TTL: ${ttlSeconds}s)`);
-	await redis.setEx(key, ttlSeconds, JSON.stringify(value));
+	await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
 }
