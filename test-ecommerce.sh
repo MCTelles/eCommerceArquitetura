@@ -18,7 +18,8 @@ curl --silent --request POST \
   --header "Content-Type: application/json" \
   --data '{
     "name": "João",
-    "email": "joao@example.com"
+    "email": "joao@example.com",
+    "password": "123456"
   }'
 
 echo ""
@@ -61,8 +62,8 @@ ORDER_RESPONSE=$(curl --silent --request POST \
   --header "Content-Type: application/json" \
   --data '{
     "userId": 1,
-    "items": [
-      { "productId": 1, "quantity": 1 }
+    "products": [
+      { "id": 1, "qty": 1 }
     ]
   }')
 

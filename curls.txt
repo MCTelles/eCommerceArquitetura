@@ -1,70 +1,145 @@
-=============================
-=        USERS
-=============================
+# Coleção de cURLs (localhost:8000)
 
-# Listar usuários
+## USERS
+
+### POST /users
+
+```bash
+curl -X POST http://localhost:8000/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Marcelo","email":"marcelo@example.com","password":"123456"}'
+```
+
+### GET /users
+
+```bash
 curl http://localhost:8000/users
+```
 
-# Criar usuário
-curl --request POST http://localhost:8000/users \
-  --header "Content-Type: application/json" \
-  --data '{
-    "name": "João",
-    "email": "joao@example.com"
-  }'
+---
 
+## PRODUCTS
 
-=============================
-=        PRODUCTS
-=============================
+### POST /products
 
-# Listar produtos
+```bash
+curl -X POST http://localhost:8000/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Café","price":12.5,"stock":20}'
+```
+
+### GET /products
+
+```bash
 curl http://localhost:8000/products
+```
 
-# Criar produto
-curl --request POST http://localhost:8000/products \
-  --header "Content-Type: application/json" \
-  --data '{
-    "name": "Notebook",
-    "price": 3500,
-    "stock": 10
-  }'
+### GET /products/2
 
+```bash
+curl http://localhost:8000/products/2
+```
 
-=============================
-=        ORDERS
-=============================
+### DELETE /products/2
 
-# Listar pedidos
+```bash
+curl -X DELETE http://localhost:8000/products/2
+```
+
+### PUT /products/2
+
+```bash
+curl -X PUT http://localhost:8000/products/2 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Café Premium","price":15.0,"stock":30}'
+```
+
+### PATCH /products/2/stock
+
+```bash
+curl -X PATCH http://localhost:8000/products/2/stock \
+  -H "Content-Type: application/json" \
+  -d '{"stock": 50}'
+```
+
+---
+
+## ORDERS
+
+### POST /orders
+
+```bash
+curl -X POST http://localhost:8000/orders \
+  -H "Content-Type: application/json" \
+  -d '{"userId":1,"products":[{"id":2,"qty":1}]}'
+```
+
+### GET /orders
+
+```bash
 curl http://localhost:8000/orders
+```
 
-# Criar pedido
-curl --request POST http://localhost:8000/orders \
-  --header "Content-Type: application/json" \
-  --data '{
-    "userId": 1,
-    "items": [
-      { "productId": 1, "quantity": 2 }
-    ]
-  }'
+### GET /orders/user/1
 
+```bash
+curl http://localhost:8000/orders/user/1
+```
 
-=============================
-=        PAYMENTS
-=============================
+### GET /orders/{id}
 
-# Métodos de pagamento
+```bash
+curl http://localhost:8000/orders/68dab7fbee7b7d876df86ea0
+```
+
+### PATCH /orders/{id}/status
+
+```bash
+curl -X PATCH http://localhost:8000/orders/68dab7fbee7b7d876df86ea0/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"paid"}'
+```
+
+---
+
+## PAYMENTS
+
+### GET /payments/methods
+
+```bash
 curl http://localhost:8000/payments/methods
+```
 
-# Confirmar pagamento
-curl --request POST http://localhost:8000/payments/confirm \
-  --header "Content-Type: application/json" \
-  --data '{
-    "orderId": "REPLACE_ORDER_ID",
-    "payments": [
-      { "method": "PIX", "amount": 4000 }
-    ]
-  }'
+### POST /payments/confirm
 
-# Buscar pagamentos de um pedido
-curl http://localhost:8000/payments/order/REPLACE_ORDER_ID
+```bash
+curl -X POST http://localhost:8000/payments/confirm \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"691bac3a3318dd83138c0efd","method":"credit_card"}'
+```
+
+### GET /payments/order/{id}
+
+```bash
+curl http://localhost:8000/payments/order/691bac3a3318dd83138c0efd
+```
+
+---
+
+## EMAILS
+
+### POST /emails/payment/confirmation
+
+```bash
+curl -X POST http://localhost:8000/emails/payment/confirmation \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"691bac3a3318dd83138c0efd","email":"cliente@example.com"}'
+```
+
+### POST /emails/payment/cancellation
+
+```bash
+curl -X POST http://localhost:8000/emails/payment/cancellation \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"691bac3a3318dd83138c0efd","email":"cliente@example.com"}'
+```
