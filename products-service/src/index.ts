@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import productsRoutes from './routes/productsRoutes.js';
 import { connectRedis } from './redisClient.js';
+import { fixProductSequence } from './utils/fixSequence.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -18,6 +19,9 @@ app.get('/health', (_req, res) => {
 
 async function bootstrap() {
 	await connectRedis();
+
+	await fixProductSequence();
+
 	app.listen(PORT, () => {
 		console.log(`products-service rodando na porta ${PORT}`);
 	});

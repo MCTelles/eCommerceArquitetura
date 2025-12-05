@@ -16,7 +16,7 @@
   "license": "ISC",
   "description": "Products microservice with Express, TypeScript and Prisma",
   "dependencies": {
-    "@prisma/client": "^6.16.1",
+    "@prisma/client": "^6.19.0",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
