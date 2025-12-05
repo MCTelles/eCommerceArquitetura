@@ -71,7 +71,12 @@ curl -X PATCH http://localhost:8000/products/2/stock \
 ```bash
 curl -X POST http://localhost:8000/orders \
   -H "Content-Type: application/json" \
-  -d '{"userId":1,"products":[{"id":2,"qty":1}]}'
+  -d '{
+    "userId": 1,
+    "items": [
+      { "productId": 2, "quantity": 1 }
+    ]
+  }'
 ```
 
 ### GET /orders

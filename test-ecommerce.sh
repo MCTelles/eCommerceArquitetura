@@ -60,12 +60,7 @@ sleep 1
 ORDER_RESPONSE=$(curl --silent --request POST \
   --url $BASE_URL/orders \
   --header "Content-Type: application/json" \
-  --data '{
-    "userId": 1,
-    "products": [
-      { "id": 1, "qty": 1 }
-    ]
-  }')
+  --data '{"userId":1,"items":[{"productId":2,"quantity":1}]}')
 
 echo "Resposta do pedido:"
 echo $ORDER_RESPONSE
