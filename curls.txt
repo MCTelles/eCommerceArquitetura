@@ -28,6 +28,10 @@ curl -X POST http://localhost:8000/products \
   -d '{"name":"Café","price":12.5,"stock":20}'
 ```
 
+curl -X POST http://localhost:8000/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Acucar","price":12.5,"stock":20}'
+
 ### GET /products
 
 ```bash
@@ -74,7 +78,7 @@ curl -X POST http://localhost:8000/orders \
   -d '{
     "userId": 1,
     "items": [
-      { "productId": 2, "quantity": 1 }
+      { "productId": 1, "quantity": 1 }
     ]
   }'
 ```
